@@ -16,8 +16,10 @@ Server = https://github.com/${GITHUB_REPOSITORY}/releases/download/repo"
 # pacman asks for <repo>.db / <repo>.files; release assets cannot be symlinks.
 for kind in db files; do
     [ -f "$REPO.$kind.tar.gz" ] || continue
-    cp -f "$REPO.$kind.tar.gz" "$REPO.$kind"
-    [ -f "$REPO.$kind.tar.gz.sig" ] && cp -f "$REPO.$kind.tar.gz.sig" "$REPO.$kind.sig"
+    # repo-add leaves these as symlinks to the .tar.gz.
+    rm -f "$REPO.$kind" "$REPO.$kind.sig"
+    cp "$REPO.$kind.tar.gz" "$REPO.$kind"
+    [ -f "$REPO.$kind.tar.gz.sig" ] && cp "$REPO.$kind.tar.gz.sig" "$REPO.$kind.sig"
 done
 rm -f -- *.old *.old.sig
 
