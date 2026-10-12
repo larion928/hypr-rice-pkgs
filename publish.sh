@@ -5,8 +5,9 @@ REPO=hypr-rice
 TAG=repo
 cd out
 
-gh release view "$TAG" >/dev/null 2>&1 \
-    || gh release create "$TAG" --title "pacman repo" --latest=false \
+R=(-R "$GITHUB_REPOSITORY")
+gh release view "$TAG" "${R[@]}" >/dev/null 2>&1 \
+    || gh release create "$TAG" "${R[@]}" --title "pacman repo" --latest=false \
         --notes "pacman repository for hypr-rice. Add to /etc/pacman.conf:
 [hypr-rice]
 SigLevel = Required DatabaseOptional
@@ -22,13 +23,13 @@ rm -f -- *.old *.old.sig
 
 shopt -s nullglob
 files=(*.pkg.tar.zst *.pkg.tar.zst.sig "$REPO".db* "$REPO".files*)
-[ ${#files[@]} -eq 0 ] || gh release upload "$TAG" "${files[@]}" --clobber
+[ ${#files[@]} -eq 0 ] || gh release upload "$TAG" "${R[@]}" "${files[@]}" --clobber
 
 # Whatever package the database does not mention is an old version.
 listed=$(tar -xzOf "$REPO.db.tar.gz" --wildcards '*/desc' | awk '/^%FILENAME%$/ {getline; print}')
-gh release view "$TAG" --json assets --jq '.assets[].name' | while read -r asset; do
+gh release view "$TAG" "${R[@]}" --json assets --jq '.assets[].name' | while read -r asset; do
     case "$asset" in
         *.pkg.tar.zst|*.pkg.tar.zst.sig)
-            grep -qxF "${asset%.sig}" <<<"$listed" || gh release delete-asset "$TAG" "$asset" --yes ;;
+            grep -qxF "${asset%.sig}" <<<"$listed" || gh release delete-asset "$TAG" "${R[@]}" "$asset" --yes ;;
     esac
 done

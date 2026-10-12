@@ -44,6 +44,11 @@ for pkg in "${PKGS[@]}"; do
     if ! git clone -q --depth 1 "https://aur.archlinux.org/$pkg.git" "$WORK/$pkg"; then
         FAILED+=("$pkg (clone)"); continue
     fi
+    # Upstream signing keys the PKGBUILD trusts (papirus-folders checks its git tag).
+    for k in $(cd "$WORK/$pkg" && bash -c 'source PKGBUILD >/dev/null 2>&1; echo "${validpgpkeys[@]}"'); do
+        gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys "$k" >/dev/null 2>&1 \
+            || gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$k" >/dev/null 2>&1 || true
+    done
     if ! (cd "$WORK/$pkg" && makepkg -s --noconfirm --needed --sign --key "$SIGNING_FPR" \
             PKGDEST="$WORK/pkgs-$pkg" >"$WORK/$pkg.log" 2>&1); then
         tail -n 40 "$WORK/$pkg.log"

@@ -29,7 +29,8 @@ jobs:
 
       - name: Prepare
         run: |
-          pacman -Syu --noconfirm --needed git github-cli jq
+          # appstream: ProtonPlus needs it to build but its PKGBUILD does not list it.
+          pacman -Syu --noconfirm --needed git github-cli jq appstream
           useradd -m builder
           echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder
           chown -R builder: "$GITHUB_WORKSPACE"
