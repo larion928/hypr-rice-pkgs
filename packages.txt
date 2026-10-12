@@ -1,0 +1,19 @@
+# AUR packages built into the hypr-rice pacman repo (one per line).
+# rice itself
+yay-bin
+histui-bin
+sddm-sugar-candy-git
+papirus-folders
+graphite-gtk-theme
+# programs from hypr-rice/packages/apps.txt
+ayugram-desktop-bin
+drift-bin
+happ-desktop-bin
+protonplus
+claude-code
+brave-bin
+zen-browser-bin
+vesktop-bin
+heroic-games-launcher-bin
+visual-studio-code-bin
+onlyoffice-bin

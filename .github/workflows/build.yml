@@ -1,0 +1,61 @@
+name: build
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild every package"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths: [packages.txt, build.sh, publish.sh, .github/workflows/build.yml]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare
+        run: |
+          pacman -Syu --noconfirm --needed git github-cli jq
+          useradd -m builder
+          echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder
+          chown -R builder: "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Import signing key
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+        run: |
+          printf '%s\n' "$SIGNING_KEY" | sudo -u builder gpg --batch --import
+          sudo -u builder gpg --list-secret-keys --with-colons | awk -F: '/^fpr/ {print $10; exit}' > /tmp/fpr
+
+      - name: Build
+        env:
+          FORCE: ${{ inputs.force && '1' || '' }}
+        run: |
+          sudo -u builder env SIGNING_FPR="$(cat /tmp/fpr)" FORCE="$FORCE" \
+            GITHUB_REPOSITORY="$GITHUB_REPOSITORY" ./build.sh
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./publish.sh
+
+      - name: Report failures
+        run: |
+          if [ -s out/failed.txt ]; then
+            echo "::warning::not built: $(tr '\n' ' ' < out/failed.txt)"
+          fi
